@@ -10,13 +10,14 @@ import 'broxus_app_links_platform_interface.dart';
 /// An implementation of [BroxusAppLinksPlatform] that uses method channels.
 class MethodChannelBroxusAppLinks extends BroxusAppLinksPlatform {
   /// The method channel used to interact with the native platform.
-  MethodChannelBroxusAppLinks();
+  MethodChannelBroxusAppLinks() {
+    methodChannel.setMethodCallHandler(_onNativeData);
+  }
 
   static const _methodChannelName = 'broxus_app_links/methods';
 
   @visibleForTesting
-  late final methodChannel = const MethodChannel(_methodChannelName)
-    ..setMethodCallHandler(_onNativeData);
+  static const methodChannel = MethodChannel(_methodChannelName);
 
   late final _uriController = StreamController<Uri>();
 
@@ -28,17 +29,13 @@ class MethodChannelBroxusAppLinks extends BroxusAppLinksPlatform {
 
     Uri? link;
 
-    print('!!! Methods ${Methods.newUri.equals(call.method)}');
-
     if (Methods.newUri.equals(call.method)) {
       link = transformToUri(payload);
     }
-    print('!!! link $link ${link == null}');
+
     if (link == null) {
       return;
     }
-
-    print('!!! onNativeData');
     _uriController.add(link);
   }
 }

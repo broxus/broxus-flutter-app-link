@@ -3,6 +3,8 @@ package com.broxus.app.links.broxus_app_links
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.FlutterPlugin.FlutterPluginBinding
@@ -23,33 +25,18 @@ open class BroxusAppLinksPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
         private const val METHOD_CHANNEL = "broxus_app_links/methods"
 
         private var currentMethodChannel: MethodChannel? = null
-
-        private var currentFlutterPluginBinding: FlutterPluginBinding? = null
-
-        private var currentApplicationContext: Context? = null
     }
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        currentApplicationContext = flutterPluginBinding.applicationContext
-
-        currentFlutterPluginBinding = flutterPluginBinding
-
-        if (currentMethodChannel == null) {
-            initPlugin(flutterPluginBinding.binaryMessenger)
-        }
+        currentMethodChannel = MethodChannel(flutterPluginBinding.binaryMessenger, METHOD_CHANNEL)
+        currentMethodChannel?.setMethodCallHandler(this)
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-
-        currentFlutterPluginBinding?.binaryMessenger?.let {
-            initPlugin(it)
-        }
-
         binding.addOnNewIntentListener(this)
         val mainActivity = binding.activity
         val intent = mainActivity.intent
         dispatchUri(intent)
-
     }
 
     override fun onDetachedFromActivityForConfigChanges() {}
@@ -58,23 +45,16 @@ open class BroxusAppLinksPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
         binding.addOnNewIntentListener(this)
     }
 
-    override fun onDetachedFromActivity() {
+    override fun onDetachedFromActivity() {}
+
+
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         currentMethodChannel?.setMethodCallHandler(null)
         currentMethodChannel = null
     }
 
-
-    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {}
-
-    private fun initPlugin(binaryMessenger: BinaryMessenger) {
-        currentMethodChannel = MethodChannel(binaryMessenger, METHOD_CHANNEL)
-        currentMethodChannel?.setMethodCallHandler(this)
-    }
-
     override fun onNewIntent(intent: Intent): Boolean {
-
         dispatchUri(intent)
-
         return true
     }
 
@@ -107,22 +87,18 @@ open class BroxusAppLinksPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
     private fun dispatchUri(intent: Intent) {
         val uri: Uri? = parseLinkIntent(intent)
 
-
         if (uri != null) {
-
             try {
-                currentMethodChannel?.invokeMethod(
-                    "newUri", hashMapOf(
-                        "uriStr" to uri.toString()
+                Handler(Looper.getMainLooper()).post {
+                    currentMethodChannel?.invokeMethod(
+                        "newUri", hashMapOf(
+                            "uriStr" to uri.toString()
+                        )
                     )
-                )
+                }
             } catch (t: Throwable) {
-                Log.w("BroxusAppLinksPlugin", "BroxusAppLinksPlugin Error: ${t.message}")
+                Log.w("BroxusAppLinksPalugin", "BroxusAppLinksPlugin Error: ${t.message}")
             }
-
-
         }
-
-
     }
 }
