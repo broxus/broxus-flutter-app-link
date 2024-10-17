@@ -21,16 +21,20 @@ public class BroxusAppLinksPlugin: NSObject, FlutterPlugin, FlutterApplicationLi
         }
     }
     
-    public func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
-        dispatchUri(url)
-        return true
-    }
-    
-    public func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
-        if let url = userActivity.webpageURL {
-            dispatchUri(url)
+    public func application(
+        _ application: UIApplication,
+        continue userActivity: NSUserActivity,
+        restorationHandler: @escaping ([Any]) -> Void
+    ) -> Bool {
+        
+        switch userActivity.activityType {
+            case NSUserActivityTypeBrowsingWeb:
+                if let url = userActivity.webpageURL {
+                    dispatchUri(url)
+                }
+                return false
+            default: return false
         }
-        return true
     }
     
     private func dispatchUri(_ uri: URL) {
